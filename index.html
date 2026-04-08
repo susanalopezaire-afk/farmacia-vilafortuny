@@ -170,65 +170,88 @@
       margin-top: 0.25rem;
     }
 
-    .preview-wrap {
-      display: none;
+    /* Images grid */
+    .images-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.65rem;
       margin-top: 1rem;
+    }
+
+    @media (max-width: 480px) {
+      .images-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .img-card {
       position: relative;
-    }
-
-    .preview-wrap img {
-      width: 100%;
-      max-height: 200px;
-      object-fit: contain;
+      aspect-ratio: 1;
       border-radius: 8px;
+      overflow: hidden;
       border: 1px solid #e5e5e3;
+      background: #f0f0ee;
     }
 
-    .remove-img {
+    .img-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .img-overlay {
       position: absolute;
-      top: 6px;
-      right: 6px;
-      background: #fff;
-      border: 1px solid #ddd;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      background: rgba(0,0,0,0.45);
+      transition: opacity 0.2s;
+    }
+
+    .img-overlay.done { display: none; }
+
+    .img-overlay .img-spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
       border-radius: 50%;
-      width: 26px;
-      height: 26px;
-      font-size: 0.8rem;
+      animation: spin 0.65s linear infinite;
+    }
+
+    .img-overlay .img-pct {
+      font-size: 0.7rem;
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .img-overlay.error { background: rgba(155,28,28,0.55); }
+    .img-overlay.error::after {
+      content: '✕';
+      font-size: 1.4rem;
+      color: #fff;
+    }
+
+    .img-remove {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.92);
+      color: #333;
+      font-size: 0.65rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #555;
+      line-height: 1;
+      z-index: 2;
     }
 
-    .remove-img:hover { background: #f5f5f3; }
-
-    /* Upload status */
-    .upload-status {
-      display: none;
-      margin-top: 0.75rem;
-      font-size: 0.8rem;
-      color: #555;
-    }
-
-    .upload-bar-wrap {
-      height: 4px;
-      background: #eee;
-      border-radius: 2px;
-      margin-top: 0.4rem;
-      overflow: hidden;
-    }
-
-    .upload-bar {
-      height: 100%;
-      background: #111;
-      border-radius: 2px;
-      width: 0%;
-      transition: width 0.2s;
-    }
-
-    .upload-ok  { color: #1e6b35; }
-    .upload-err { color: #9b1c1c; }
+    .img-remove:hover { background: #fff; }
 
     /* Submit button */
     .btn-submit {
@@ -327,23 +350,13 @@
       <p class="card-title">Imatge del producte</p>
 
       <div class="dropzone" id="dropzone">
-        <input type="file" id="fileInput" accept="image/*" />
+        <input type="file" id="fileInput" accept="image/*" multiple />
         <div class="drop-icon">🖼️</div>
-        <p class="drop-text"><strong>Arrossega una imatge aquí</strong><br>o fes clic per seleccionar</p>
-        <p class="drop-hint">PNG, JPG, WEBP · Màx. 5 MB</p>
+        <p class="drop-text"><strong>Arrossega imatges aquí</strong><br>o fes clic per seleccionar</p>
+        <p class="drop-hint">PNG, JPG, WEBP · Múltiples imatges permeses</p>
       </div>
 
-      <div class="preview-wrap" id="previewWrap">
-        <img id="previewImg" src="" alt="Previsualització" />
-        <button type="button" class="remove-img" id="removeImg" title="Eliminar imatge">✕</button>
-      </div>
-
-      <div class="upload-status" id="uploadStatus">
-        <span id="uploadStatusText">Pujant imatge a Cloudinary...</span>
-        <div class="upload-bar-wrap" id="uploadBarWrap">
-          <div class="upload-bar" id="uploadBar"></div>
-        </div>
-      </div>
+      <div class="images-grid" id="imagesGrid"></div>
     </div>
 
     <button type="submit" class="btn-submit" id="submitBtn">
@@ -358,40 +371,82 @@
 </div>
 
 <script>
-  // ── Config ──────────────────────────────────────────────
+  // ── Config ───────────────────────────────────────────────
   const NOTION_API_KEY    = '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';
   const DATABASE_ID       = '33c6d3859f0d80d68759fe1d4200cd63';
-  const NOTION_URL        = 'https://api.notion.com/v1/pages';
-  const NOTION_PROXY      = 'https://corsproxy.io/?' + encodeURIComponent(NOTION_URL);
-
+  const NOTION_PROXY      = 'https://corsproxy.io/?' + encodeURIComponent('https://api.notion.com/v1/pages');
   const CLOUDINARY_CLOUD  = 'dciueak8c';
-  const CLOUDINARY_PRESET = 'farmacia_vilafortuny'; // unsigned preset (see instructions)
+  const CLOUDINARY_PRESET = 'farmacia_vilafortuny';
   const CLOUDINARY_URL    = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
 
   // ── State ────────────────────────────────────────────────
-  let cloudinaryUrl = null;
+  // Each entry: { id, file, previewUrl, cloudinaryUrl, status: 'uploading'|'done'|'error', pct }
+  let images = [];
+  let nextId = 0;
 
   // ── DOM refs ─────────────────────────────────────────────
-  const dropzone      = document.getElementById('dropzone');
-  const fileInput     = document.getElementById('fileInput');
-  const previewWrap   = document.getElementById('previewWrap');
-  const previewImg    = document.getElementById('previewImg');
-  const removeImg     = document.getElementById('removeImg');
-  const uploadStatus  = document.getElementById('uploadStatus');
-  const uploadStatusText = document.getElementById('uploadStatusText');
-  const uploadBar     = document.getElementById('uploadBar');
-  const form          = document.getElementById('productForm');
-  const submitBtn     = document.getElementById('submitBtn');
-  const btnText       = document.getElementById('btnText');
-  const spinner       = document.getElementById('spinner');
-  const alertOk       = document.getElementById('alertSuccess');
-  const alertErr      = document.getElementById('alertError');
+  const dropzone    = document.getElementById('dropzone');
+  const fileInput   = document.getElementById('fileInput');
+  const imagesGrid  = document.getElementById('imagesGrid');
+  const form        = document.getElementById('productForm');
+  const submitBtn   = document.getElementById('submitBtn');
+  const btnText     = document.getElementById('btnText');
+  const spinner     = document.getElementById('spinner');
+  const alertOk     = document.getElementById('alertSuccess');
+  const alertErr    = document.getElementById('alertError');
+
+  // ── Render grid ──────────────────────────────────────────
+  function renderGrid() {
+    imagesGrid.innerHTML = '';
+    images.forEach(img => {
+      const card = document.createElement('div');
+      card.className = 'img-card';
+      card.dataset.id = img.id;
+
+      const el = document.createElement('img');
+      el.src = img.previewUrl;
+      el.alt = img.file.name;
+      card.appendChild(el);
+
+      // Overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'img-overlay' + (img.status === 'done' ? ' done' : img.status === 'error' ? ' error' : '');
+      if (img.status === 'uploading') {
+        const sp = document.createElement('div');
+        sp.className = 'img-spinner';
+        const pct = document.createElement('span');
+        pct.className = 'img-pct';
+        pct.textContent = img.pct + '%';
+        overlay.appendChild(sp);
+        overlay.appendChild(pct);
+      }
+      card.appendChild(overlay);
+
+      // Remove button
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'img-remove';
+      removeBtn.title = 'Eliminar imatge';
+      removeBtn.textContent = '✕';
+      removeBtn.addEventListener('click', () => removeImage(img.id));
+      card.appendChild(removeBtn);
+
+      imagesGrid.appendChild(card);
+    });
+  }
+
+  function removeImage(id) {
+    const img = images.find(i => i.id === id);
+    if (img) URL.revokeObjectURL(img.previewUrl);
+    images = images.filter(i => i.id !== id);
+    renderGrid();
+  }
 
   // ── Cloudinary upload ────────────────────────────────────
-  function uploadToCloudinary(file) {
+  function uploadToCloudinary(imgEntry) {
     return new Promise((resolve, reject) => {
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', imgEntry.file);
       fd.append('upload_preset', CLOUDINARY_PRESET);
 
       const xhr = new XMLHttpRequest();
@@ -399,8 +454,8 @@
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
-          const pct = Math.round((e.loaded / e.total) * 100);
-          uploadBar.style.width = pct + '%';
+          imgEntry.pct = Math.round((e.loaded / e.total) * 100);
+          renderGrid();
         }
       };
 
@@ -410,47 +465,48 @@
           resolve(data.secure_url);
         } else {
           const err = JSON.parse(xhr.responseText || '{}');
-          reject(new Error(err.error?.message || 'Error pujant la imatge'));
+          reject(new Error(err.error?.message || 'Error pujant'));
         }
       };
 
-      xhr.onerror = () => reject(new Error('Error de xarxa pujant la imatge'));
+      xhr.onerror = () => reject(new Error('Error de xarxa'));
       xhr.send(fd);
     });
   }
 
-  async function handleFile(file) {
-    if (!file || !file.type.startsWith('image/')) return;
+  async function processFiles(files) {
+    const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!validFiles.length) return;
 
-    // Preview
-    previewImg.src = URL.createObjectURL(file);
-    previewWrap.style.display = 'block';
-    dropzone.style.display = 'none';
-    cloudinaryUrl = null;
+    const entries = validFiles.map(file => ({
+      id: nextId++,
+      file,
+      previewUrl: URL.createObjectURL(file),
+      cloudinaryUrl: null,
+      status: 'uploading',
+      pct: 0
+    }));
 
-    // Upload status
-    uploadStatus.style.display = 'block';
-    uploadStatusText.textContent = 'Pujant imatge a Cloudinary...';
-    uploadStatusText.className = '';
-    uploadBar.style.width = '0%';
-    document.getElementById('uploadBarWrap').style.display = 'block';
+    images = [...images, ...entries];
+    renderGrid();
 
-    try {
-      cloudinaryUrl = await uploadToCloudinary(file);
-      uploadBar.style.width = '100%';
-      uploadStatusText.textContent = '✓ Imatge pujada correctament';
-      uploadStatusText.className = 'upload-ok';
-      document.getElementById('uploadBarWrap').style.display = 'none';
-    } catch (err) {
-      uploadStatusText.textContent = '✕ ' + err.message;
-      uploadStatusText.className = 'upload-err';
-      document.getElementById('uploadBarWrap').style.display = 'none';
-    }
+    // Upload all in parallel
+    await Promise.all(entries.map(async (entry) => {
+      try {
+        entry.cloudinaryUrl = await uploadToCloudinary(entry);
+        entry.status = 'done';
+        entry.pct = 100;
+      } catch {
+        entry.status = 'error';
+      }
+      renderGrid();
+    }));
   }
 
   // ── Drag & drop events ───────────────────────────────────
   fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) handleFile(fileInput.files[0]);
+    if (fileInput.files.length) processFiles(fileInput.files);
+    fileInput.value = '';
   });
 
   dropzone.addEventListener('dragover', (e) => {
@@ -463,21 +519,10 @@
   dropzone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropzone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file) { fileInput.files = e.dataTransfer.files; handleFile(file); }
+    if (e.dataTransfer.files.length) processFiles(e.dataTransfer.files);
   });
 
-  removeImg.addEventListener('click', () => {
-    fileInput.value = '';
-    previewImg.src = '';
-    cloudinaryUrl = null;
-    previewWrap.style.display = 'none';
-    dropzone.style.display = 'block';
-    uploadStatus.style.display = 'none';
-    uploadBar.style.width = '0%';
-  });
-
-  // ── Form submit ──────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────
   function setLoading(on) {
     submitBtn.disabled = on;
     btnText.textContent = on ? 'Desant...' : 'Desar producte a Notion';
@@ -495,6 +540,7 @@
     }
   }
 
+  // ── Form submit ──────────────────────────────────────────
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -509,9 +555,9 @@
       return;
     }
 
-    // Block submit if image is selected but upload failed
-    if (fileInput.files[0] && !cloudinaryUrl) {
-      showAlert('error', 'Espera que la imatge acabi de pujar o elimina-la.');
+    const uploading = images.filter(i => i.status === 'uploading');
+    if (uploading.length) {
+      showAlert('error', 'Espera que acabin de pujar totes les imatges.');
       return;
     }
 
@@ -520,20 +566,21 @@
     alertErr.style.display = 'none';
 
     const properties = {
-      'Nom del producte':              { title:     [{ text: { content: nom } }] },
-      'Número de referència':          { rich_text: [{ text: { content: referencia } }] },
-      'Preu (€)':                      { number: preu },
-      'Unitats disponibles per vendre':{ number: unitats },
-      'Descripció del producte':       { rich_text: [{ text: { content: descripcio } }] }
+      'Nom del producte':               { title:     [{ text: { content: nom } }] },
+      'Número de referència':           { rich_text: [{ text: { content: referencia } }] },
+      'Preu (€)':                       { number: preu },
+      'Unitats disponibles per vendre': { number: unitats },
+      'Descripció del producte':        { rich_text: [{ text: { content: descripcio } }] }
     };
 
-    if (cloudinaryUrl) {
+    const doneImages = images.filter(i => i.status === 'done' && i.cloudinaryUrl);
+    if (doneImages.length) {
       properties['Imatge del producte'] = {
-        files: [{
-          name: fileInput.files[0].name,
+        files: doneImages.map(i => ({
+          name: i.file.name,
           type: 'external',
-          external: { url: cloudinaryUrl }
-        }]
+          external: { url: i.cloudinaryUrl }
+        }))
       };
     }
 
@@ -555,7 +602,9 @@
 
       showAlert('success');
       form.reset();
-      removeImg.click();
+      images.forEach(i => URL.revokeObjectURL(i.previewUrl));
+      images = [];
+      renderGrid();
     } catch (err) {
       showAlert('error', err.message || 'Error de connexió. Torna-ho a intentar.');
     } finally {
