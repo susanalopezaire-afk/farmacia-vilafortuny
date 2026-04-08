@@ -203,6 +203,33 @@
 
     .remove-img:hover { background: #f5f5f3; }
 
+    /* Upload status */
+    .upload-status {
+      display: none;
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: #555;
+    }
+
+    .upload-bar-wrap {
+      height: 4px;
+      background: #eee;
+      border-radius: 2px;
+      margin-top: 0.4rem;
+      overflow: hidden;
+    }
+
+    .upload-bar {
+      height: 100%;
+      background: #111;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.2s;
+    }
+
+    .upload-ok  { color: #1e6b35; }
+    .upload-err { color: #9b1c1c; }
+
     /* Submit button */
     .btn-submit {
       width: 100%;
@@ -310,6 +337,13 @@
         <img id="previewImg" src="" alt="Previsualització" />
         <button type="button" class="remove-img" id="removeImg" title="Eliminar imatge">✕</button>
       </div>
+
+      <div class="upload-status" id="uploadStatus">
+        <span id="uploadStatusText">Pujant imatge a Cloudinary...</span>
+        <div class="upload-bar-wrap" id="uploadBarWrap">
+          <div class="upload-bar" id="uploadBar"></div>
+        </div>
+      </div>
     </div>
 
     <button type="submit" class="btn-submit" id="submitBtn">
@@ -324,28 +358,99 @@
 </div>
 
 <script>
-  const NOTION_API_KEY = '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';
-  const DATABASE_ID   = '33c6d3859f0d80d68759fe1d4200cd63';
-  const NOTION_URL    = 'https://api.notion.com/v1/pages';
-  const PROXY_URL     = 'https://corsproxy.io/?' + encodeURIComponent(NOTION_URL);
+  // ── Config ──────────────────────────────────────────────
+  const NOTION_API_KEY    = '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';
+  const DATABASE_ID       = '33c6d3859f0d80d68759fe1d4200cd63';
+  const NOTION_URL        = 'https://api.notion.com/v1/pages';
+  const NOTION_PROXY      = 'https://corsproxy.io/?' + encodeURIComponent(NOTION_URL);
 
-  // --- Drag & drop ---
-  const dropzone   = document.getElementById('dropzone');
-  const fileInput  = document.getElementById('fileInput');
-  const previewWrap = document.getElementById('previewWrap');
-  const previewImg = document.getElementById('previewImg');
-  const removeImg  = document.getElementById('removeImg');
+  const CLOUDINARY_CLOUD  = 'dciueak8c';
+  const CLOUDINARY_PRESET = 'farmacia_vilafortuny'; // unsigned preset (see instructions)
+  const CLOUDINARY_URL    = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
 
-  function showPreview(file) {
-    if (!file || !file.type.startsWith('image/')) return;
-    const url = URL.createObjectURL(file);
-    previewImg.src = url;
-    previewWrap.style.display = 'block';
-    dropzone.style.display = 'none';
+  // ── State ────────────────────────────────────────────────
+  let cloudinaryUrl = null;
+
+  // ── DOM refs ─────────────────────────────────────────────
+  const dropzone      = document.getElementById('dropzone');
+  const fileInput     = document.getElementById('fileInput');
+  const previewWrap   = document.getElementById('previewWrap');
+  const previewImg    = document.getElementById('previewImg');
+  const removeImg     = document.getElementById('removeImg');
+  const uploadStatus  = document.getElementById('uploadStatus');
+  const uploadStatusText = document.getElementById('uploadStatusText');
+  const uploadBar     = document.getElementById('uploadBar');
+  const form          = document.getElementById('productForm');
+  const submitBtn     = document.getElementById('submitBtn');
+  const btnText       = document.getElementById('btnText');
+  const spinner       = document.getElementById('spinner');
+  const alertOk       = document.getElementById('alertSuccess');
+  const alertErr      = document.getElementById('alertError');
+
+  // ── Cloudinary upload ────────────────────────────────────
+  function uploadToCloudinary(file) {
+    return new Promise((resolve, reject) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', CLOUDINARY_PRESET);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', CLOUDINARY_URL, true);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          uploadBar.style.width = pct + '%';
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          resolve(data.secure_url);
+        } else {
+          const err = JSON.parse(xhr.responseText || '{}');
+          reject(new Error(err.error?.message || 'Error pujant la imatge'));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Error de xarxa pujant la imatge'));
+      xhr.send(fd);
+    });
   }
 
+  async function handleFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+
+    // Preview
+    previewImg.src = URL.createObjectURL(file);
+    previewWrap.style.display = 'block';
+    dropzone.style.display = 'none';
+    cloudinaryUrl = null;
+
+    // Upload status
+    uploadStatus.style.display = 'block';
+    uploadStatusText.textContent = 'Pujant imatge a Cloudinary...';
+    uploadStatusText.className = '';
+    uploadBar.style.width = '0%';
+    document.getElementById('uploadBarWrap').style.display = 'block';
+
+    try {
+      cloudinaryUrl = await uploadToCloudinary(file);
+      uploadBar.style.width = '100%';
+      uploadStatusText.textContent = '✓ Imatge pujada correctament';
+      uploadStatusText.className = 'upload-ok';
+      document.getElementById('uploadBarWrap').style.display = 'none';
+    } catch (err) {
+      uploadStatusText.textContent = '✕ ' + err.message;
+      uploadStatusText.className = 'upload-err';
+      document.getElementById('uploadBarWrap').style.display = 'none';
+    }
+  }
+
+  // ── Drag & drop events ───────────────────────────────────
   fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) showPreview(fileInput.files[0]);
+    if (fileInput.files[0]) handleFile(fileInput.files[0]);
   });
 
   dropzone.addEventListener('dragover', (e) => {
@@ -359,24 +464,20 @@
     e.preventDefault();
     dropzone.classList.remove('drag-over');
     const file = e.dataTransfer.files[0];
-    if (file) { fileInput.files = e.dataTransfer.files; showPreview(file); }
+    if (file) { fileInput.files = e.dataTransfer.files; handleFile(file); }
   });
 
   removeImg.addEventListener('click', () => {
     fileInput.value = '';
     previewImg.src = '';
+    cloudinaryUrl = null;
     previewWrap.style.display = 'none';
     dropzone.style.display = 'block';
+    uploadStatus.style.display = 'none';
+    uploadBar.style.width = '0%';
   });
 
-  // --- Form submit ---
-  const form      = document.getElementById('productForm');
-  const submitBtn = document.getElementById('submitBtn');
-  const btnText   = document.getElementById('btnText');
-  const spinner   = document.getElementById('spinner');
-  const alertOk   = document.getElementById('alertSuccess');
-  const alertErr  = document.getElementById('alertError');
-
+  // ── Form submit ──────────────────────────────────────────
   function setLoading(on) {
     submitBtn.disabled = on;
     btnText.textContent = on ? 'Desant...' : 'Desar producte a Notion';
@@ -408,40 +509,43 @@
       return;
     }
 
+    // Block submit if image is selected but upload failed
+    if (fileInput.files[0] && !cloudinaryUrl) {
+      showAlert('error', 'Espera que la imatge acabi de pujar o elimina-la.');
+      return;
+    }
+
     setLoading(true);
     alertOk.style.display = 'none';
     alertErr.style.display = 'none';
 
-    const body = {
-      parent: { database_id: DATABASE_ID },
-      properties: {
-        'Nom del producte': {
-          title: [{ text: { content: nom } }]
-        },
-        'Número de referència': {
-          rich_text: [{ text: { content: referencia } }]
-        },
-        'Preu (€)': {
-          number: preu
-        },
-        'Unitats disponibles per vendre': {
-          number: unitats
-        },
-        'Descripció del producte': {
-          rich_text: [{ text: { content: descripcio } }]
-        }
-      }
+    const properties = {
+      'Nom del producte':              { title:     [{ text: { content: nom } }] },
+      'Número de referència':          { rich_text: [{ text: { content: referencia } }] },
+      'Preu (€)':                      { number: preu },
+      'Unitats disponibles per vendre':{ number: unitats },
+      'Descripció del producte':       { rich_text: [{ text: { content: descripcio } }] }
     };
 
+    if (cloudinaryUrl) {
+      properties['Imatge del producte'] = {
+        files: [{
+          name: fileInput.files[0].name,
+          type: 'external',
+          external: { url: cloudinaryUrl }
+        }]
+      };
+    }
+
     try {
-      const res = await fetch(PROXY_URL, {
+      const res = await fetch(NOTION_PROXY, {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer ' + NOTION_API_KEY,
+          'Authorization':  'Bearer ' + NOTION_API_KEY,
           'Notion-Version': '2022-06-28',
-          'Content-Type': 'application/json'
+          'Content-Type':   'application/json'
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify({ parent: { database_id: DATABASE_ID }, properties })
       });
 
       if (!res.ok) {
