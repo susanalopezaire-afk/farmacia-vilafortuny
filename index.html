@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farmàcia Vilafortuny</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo svg { flex-shrink: 0; }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a6b3c;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      color: #64748b;
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+      margin-top: 0.25rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.4rem;
+    }
+
+    label span.required {
+      color: #e53e3e;
+      margin-left: 2px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #111827;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      background: #fafafa;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #1a6b3c;
+      box-shadow: 0 0 0 3px rgba(26,107,60,0.12);
+      background: #fff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.75rem;
+      background: #1a6b3c;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    button[type="submit"]:hover { background: #155a32; }
+    button[type="submit"]:active { transform: scale(0.98); }
+    button[type="submit"]:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .alert {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="36" height="36" rx="10" fill="#1a6b3c"/>
+      <path d="M18 8v20M8 18h20" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+    </svg>
+    <h1>Farmàcia Vilafortuny</h1>
+  </div>
+  <p class="subtitle">Afegeix un producte al catàleg de Notion</p>
+
+  <form id="productForm" novalidate>
+    <div class="form-group">
+      <label for="nom">Nom del producte <span class="required">*</span></label>
+      <input type="text" id="nom" placeholder="p. ex. Ibuprofèn 400mg" required />
+    </div>
+
+    <div class="form-group">
+      <label for="referencia">Número de referència <span class="required">*</span></label>
+      <input type="text" id="referencia" placeholder="p. ex. REF-00123" required />
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label for="preu">Preu (€) <span class="required">*</span></label>
+        <input type="number" id="preu" placeholder="0.00" min="0" step="0.01" required />
+      </div>
+      <div class="form-group">
+        <label for="unitats">Unitats disponibles <span class="required">*</span></label>
+        <input type="number" id="unitats" placeholder="0" min="0" step="1" required />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="descripcio">Descripció del producte</label>
+      <textarea id="descripcio" placeholder="Descriu el producte, indicacions, composició..."></textarea>
+    </div>
+
+    <button type="submit" id="submitBtn">
+      <span id="btnText">Afegir producte</span>
+      <span class="spinner" id="spinner"></span>
+    </button>
+
+    <div class="alert alert-success" id="alertSuccess">
+      ✅ Producte afegit correctament a Notion!
+    </div>
+    <div class="alert alert-error" id="alertError"></div>
+  </form>
+</div>
+
+<script>
+  const NOTION_API_KEY = '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';
+  const DATABASE_ID   = '33c6d3859f0d80988856f0893ce0448d';
+  const NOTION_URL    = 'https://api.notion.com/v1/pages';
+  const PROXY_URL     = 'https://corsproxy.io/?' + encodeURIComponent(NOTION_URL);
+
+  const form        = document.getElementById('productForm');
+  const submitBtn   = document.getElementById('submitBtn');
+  const btnText     = document.getElementById('btnText');
+  const spinner     = document.getElementById('spinner');
+  const alertOk     = document.getElementById('alertSuccess');
+  const alertErr    = document.getElementById('alertError');
+
+  function setLoading(on) {
+    submitBtn.disabled = on;
+    btnText.textContent = on ? 'Enviant...' : 'Afegir producte';
+    spinner.style.display = on ? 'block' : 'none';
+  }
+
+  function showAlert(type, msg) {
+    alertOk.style.display = 'none';
+    alertErr.style.display = 'none';
+    if (type === 'success') {
+      alertOk.style.display = 'block';
+    } else {
+      alertErr.textContent = '❌ ' + msg;
+      alertErr.style.display = 'block';
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const nom       = document.getElementById('nom').value.trim();
+    const referencia = document.getElementById('referencia').value.trim();
+    const preu      = parseFloat(document.getElementById('preu').value);
+    const unitats   = parseInt(document.getElementById('unitats').value, 10);
+    const descripcio = document.getElementById('descripcio').value.trim();
+
+    if (!nom || !referencia || isNaN(preu) || isNaN(unitats)) {
+      showAlert('error', 'Omple tots els camps obligatoris.');
+      return;
+    }
+
+    setLoading(true);
+    alertOk.style.display = 'none';
+    alertErr.style.display = 'none';
+
+    const body = {
+      parent: { database_id: DATABASE_ID },
+      properties: {
+        'Nom del producte': {
+          title: [{ text: { content: nom } }]
+        },
+        'Número de referència': {
+          rich_text: [{ text: { content: referencia } }]
+        },
+        'Preu (€)': {
+          number: preu
+        },
+        'Unitats disponibles per vendre': {
+          number: unitats
+        },
+        'Descripció del producte': {
+          rich_text: [{ text: { content: descripcio } }]
+        }
+      }
+    };
+
+    try {
+      const res = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + NOTION_API_KEY,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Error ${res.status}`);
+      }
+
+      showAlert('success');
+      form.reset();
+    } catch (err) {
+      showAlert('error', err.message || 'Error de connexió. Torna-ho a intentar.');
+    } finally {
+      setLoading(false);
+    }
+  });
+</script>
+</body>
+</html>
