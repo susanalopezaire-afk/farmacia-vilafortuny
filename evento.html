@@ -370,9 +370,14 @@
 
     <div class="form-section">
       <div class="field">
-        <label>Nombre y apellidos</label>
-        <input type="text" id="nombre" placeholder="Ej: María García López">
+        <label>Nombre</label>
+        <input type="text" id="nombre" placeholder="Ej: María">
         <div class="error-msg" id="errNombre"></div>
+      </div>
+      <div class="field">
+        <label>Apellidos</label>
+        <input type="text" id="apellidos" placeholder="Ej: García López">
+        <div class="error-msg" id="errApellidos"></div>
       </div>
       <div class="field">
         <label>Email</label>
@@ -440,6 +445,7 @@
   function validate() {
     let ok = true;
     document.getElementById('errNombre').textContent = '';
+    document.getElementById('errApellidos').textContent = '';
     document.getElementById('errEmail').textContent = '';
     document.getElementById('errTelefono').textContent = '';
     document.getElementById('statusMsg').textContent = '';
@@ -449,9 +455,11 @@
       ok = false;
     }
     const nombre = document.getElementById('nombre').value.trim();
+    const apellidos = document.getElementById('apellidos').value.trim();
     const email = document.getElementById('email').value.trim();
     const telefono = document.getElementById('telefono').value.trim();
     if (!nombre) { document.getElementById('errNombre').textContent = 'Campo obligatorio'; ok = false; }
+    if (!apellidos) { document.getElementById('errApellidos').textContent = 'Campo obligatorio'; ok = false; }
     if (!email || !email.includes('@')) { document.getElementById('errEmail').textContent = 'Email no válido'; ok = false; }
     if (!telefono) { document.getElementById('errTelefono').textContent = 'Campo obligatorio'; ok = false; }
     return ok;
@@ -464,6 +472,7 @@
     btn.textContent = 'Enviando...';
 
     const nombre = document.getElementById('nombre').value.trim();
+    const apellidos = document.getElementById('apellidos').value.trim();
     const email = document.getElementById('email').value.trim();
     const telefono = document.getElementById('telefono').value.trim();
     const estadoPago = selectedTicket === 'General' ? 'Confirmado' : 'Pendiente';
@@ -479,12 +488,13 @@
         body: JSON.stringify({
           parent: { database_id: DATABASE_ID },
           properties: {
-            'Nombre y apellidos': { title: [{ text: { content: nombre } }] },
+            'Nombre': { title: [{ text: { content: nombre } }] },
+            'Apellidos': { rich_text: [{ text: { content: apellidos } }] },
             'Email': { email: email },
             'Teléfono': { phone_number: telefono },
             'Tipo de entrada': { select: { name: selectedTicket } },
             'Estado pago': { select: { name: estadoPago } },
-            'Fecha de inscripción': { date: { start: new Date().toISOString().split('T')[0] } }
+            'Fecha inscripción': { date: { start: new Date().toISOString().split('T')[0] } }
           }
         })
       });
