@@ -490,8 +490,8 @@
           properties: {
             'Nombre': { title: [{ text: { content: nombre } }] },
             'Apellidos': { rich_text: [{ text: { content: apellidos } }] },
-            'Email': { email: email },
-            'Teléfono': { phone_number: telefono },
+            'Email': { rich_text: [{ text: { content: email } }] },
+            'Teléfono': { rich_text: [{ text: { content: telefono } }] },
             'Tipo de entrada': { select: { name: selectedTicket } },
             'Estado pago': { select: { name: estadoPago } },
             'Fecha inscripción': { date: { start: new Date().toISOString().split('T')[0] } }
