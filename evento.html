@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taller de Skincare · Farmàcia Vilafortuny</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Cormorant+SC:wght@300;400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --gold: #B8963E;
+    --gold-light: #D4B86A;
+    --warm-black: #2C2C2A;
+    --cream: #F7F4EE;
+    --warm-gray: #888780;
+    --cream-dark: #EDE9E0;
+  }
+  body {
+    background: var(--cream);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    color: var(--warm-black);
+  }
+  .page {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 40px 24px 60px;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .brand {
+    font-family: 'Cormorant SC', serif;
+    font-weight: 300;
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .event-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: 42px;
+    line-height: 1.05;
+    color: var(--warm-black);
+    margin-bottom: 8px;
+  }
+  .event-title em {
+    font-style: italic;
+    color: var(--gold);
+  }
+  .event-meta {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--warm-gray);
+    margin-top: 12px;
+  }
+  .divider {
+    width: 40px;
+    height: 1px;
+    background: var(--gold);
+    margin: 20px auto;
+  }
+  .ticket-label {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+    display: block;
+  }
+  .tickets {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .ticket {
+    border: 0.5px solid rgba(184,150,62,0.3);
+    padding: 20px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+    position: relative;
+    text-align: center;
+  }
+  .ticket:hover { border-color: var(--gold); }
+  .ticket.selected {
+    border-color: var(--gold);
+    background: var(--warm-black);
+  }
+  .ticket-type {
+    font-family: 'Cormorant SC', serif;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    color: var(--warm-black);
+    margin-bottom: 4px;
+  }
+  .ticket.selected .ticket-type { color: var(--cream); }
+  .ticket-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .ticket-desc {
+    font-size: 10px;
+    color: var(--warm-gray);
+    line-height: 1.4;
+    letter-spacing: 0.03em;
+  }
+  .ticket.selected .ticket-desc { color: rgba(136,135,128,0.8); }
+  .ticket-check {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--gold);
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .ticket.selected .ticket-check { display: flex; }
+  .ticket-check::after {
+    content: '';
+    width: 6px;
+    height: 4px;
+    border-left: 1.5px solid white;
+    border-bottom: 1.5px solid white;
+    transform: rotate(-45deg) translateY(-1px);
+  }
+  .form-section { margin-bottom: 28px; }
+  .field { margin-bottom: 16px; }
+  label {
+    display: block;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  input {
+    width: 100%;
+    background: white;
+    border: 0.5px solid rgba(184,150,62,0.3);
+    padding: 13px 16px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 300;
+    font-size: 14px;
+    color: var(--warm-black);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    border-radius: 0;
+  }
+  input:focus { border-color: var(--gold); }
+  input::placeholder { color: rgba(136,135,128,0.5); }
+  .bizum-box {
+    background: var(--warm-black);
+    padding: 24px;
+    margin-bottom: 28px;
+    display: none;
+    border-left: 2px solid var(--gold);
+  }
+  .bizum-box.visible { display: block; }
+  .bizum-title {
+    font-family: 'Cormorant SC', serif;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+  .bizum-steps { list-style: none; }
+  .bizum-steps li {
+    font-size: 12px;
+    color: var(--cream);
+    line-height: 1.6;
+    padding: 6px 0;
+    border-bottom: 0.5px solid rgba(247,244,238,0.08);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .bizum-steps li:last-child { border-bottom: none; }
+  .bizum-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    color: var(--gold);
+    line-height: 1.2;
+    min-width: 16px;
+  }
+  .bizum-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    color: var(--gold-light);
+    letter-spacing: 0.05em;
+    margin-top: 8px;
+    display: block;
+  }
+  .bizum-note {
+    font-size: 10px;
+    color: var(--warm-gray);
+    margin-top: 10px;
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .plazas-bar {
+    background: rgba(184,150,62,0.08);
+    border: 0.5px solid rgba(184,150,62,0.2);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .plazas-text {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--warm-gray);
+  }
+  .plazas-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .submit-btn {
+    width: 100%;
+    background: var(--gold);
+    border: none;
+    padding: 16px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--warm-black);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .submit-btn:hover { background: var(--gold-light); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .success-screen {
+    display: none;
+    text-align: center;
+    padding: 40px 0;
+  }
+  .success-screen.visible { display: block; }
+  .success-icon {
+    width: 60px;
+    height: 60px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+  }
+  .success-icon::after {
+    content: '';
+    width: 22px;
+    height: 14px;
+    border-left: 2px solid var(--gold);
+    border-bottom: 2px solid var(--gold);
+    transform: rotate(-45deg) translateY(-3px);
+  }
+  .success-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: 36px;
+    color: var(--warm-black);
+    margin-bottom: 8px;
+  }
+  .success-title em { font-style: italic; color: var(--gold); }
+  .success-text {
+    font-size: 13px;
+    color: var(--warm-gray);
+    line-height: 1.7;
+    max-width: 380px;
+    margin: 0 auto;
+  }
+  .success-vip {
+    background: var(--warm-black);
+    padding: 20px;
+    margin-top: 24px;
+    text-align: left;
+    border-left: 2px solid var(--gold);
+    display: none;
+  }
+  .success-vip.visible { display: block; }
+  .success-vip p {
+    font-size: 12px;
+    color: var(--cream);
+    line-height: 1.6;
+  }
+  .success-vip strong { color: var(--gold-light); }
+  .error-msg {
+    font-size: 11px;
+    color: #c0392b;
+    margin-top: 6px;
+    letter-spacing: 0.05em;
+  }
+  .status-msg {
+    font-size: 11px;
+    color: var(--warm-gray);
+    text-align: center;
+    margin-top: 12px;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <p class="brand">Farmàcia Vilafortuny · Cambrils</p>
+    <h1 class="event-title">Taller de<br><em>Skincare</em></h1>
+    <div class="divider"></div>
+    <p class="event-meta">3 de Junio · 18:30h · Hotel Estival Centurion</p>
+  </div>
+
+  <div id="formMain">
+    <div class="plazas-bar">
+      <span class="plazas-text">Plazas disponibles</span>
+      <span class="plazas-num" id="plazasNum">70</span>
+    </div>
+
+    <span class="ticket-label">Elige tu entrada</span>
+    <div class="tickets">
+      <div class="ticket" id="ticketGeneral" onclick="selectTicket('General')">
+        <div class="ticket-check"></div>
+        <div class="ticket-type">General</div>
+        <div class="ticket-price">0€</div>
+        <div class="ticket-desc">Acceso al taller completo</div>
+      </div>
+      <div class="ticket" id="ticketVIP" onclick="selectTicket('VIP')">
+        <div class="ticket-check"></div>
+        <div class="ticket-type">VIP</div>
+        <div class="ticket-price">45€</div>
+        <div class="ticket-desc">Taller + cena con ponentes, sorteos y más</div>
+      </div>
+    </div>
+
+    <div class="bizum-box" id="bizumBox">
+      <div class="bizum-title">Pago VIP · Bizum</div>
+      <ul class="bizum-steps">
+        <li><span class="bizum-num">1</span><span>Envía <strong>45€</strong> por Bizum al número de Blanca:<span class="bizum-number">655 943 230</span></span></li>
+        <li><span class="bizum-num">2</span><span>En el concepto escribe tu <strong>nombre y apellidos</strong></span></li>
+        <li><span class="bizum-num">3</span><span>Completa el formulario y pulsa <strong>Reservar plaza</strong></span></li>
+      </ul>
+      <p class="bizum-note">Tu plaza quedará confirmada una vez verificado el pago. Recibirás confirmación en breve.</p>
+    </div>
+
+    <div class="form-section">
+      <div class="field">
+        <label>Nombre y apellidos</label>
+        <input type="text" id="nombre" placeholder="Ej: María García López">
+        <div class="error-msg" id="errNombre"></div>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="tu@email.com">
+        <div class="error-msg" id="errEmail"></div>
+      </div>
+      <div class="field">
+        <label>Teléfono</label>
+        <input type="tel" id="telefono" placeholder="6XX XXX XXX">
+        <div class="error-msg" id="errTelefono"></div>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitForm()">Reservar plaza</button>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
+  <div class="success-screen" id="successScreen">
+    <div class="success-icon"></div>
+    <h2 class="success-title">Plaza <em>reservada</em></h2>
+    <p class="success-text" id="successText">Tu inscripción se ha registrado correctamente. ¡Nos vemos el 3 de junio en el Hotel Estival Centurion!</p>
+    <div class="success-vip" id="successVip">
+      <p>Recuerda que tu plaza VIP quedará <strong>confirmada definitivamente</strong> una vez verifiquemos tu pago de <strong>45€ por Bizum</strong> al <strong>655 943 230</strong>. Si tienes cualquier duda, contáctanos por Instagram.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const NOTION_TOKEN = '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';
+  const DATABASE_ID = '3546d3859f0d80fcb2f6f19a81138cb0';
+  const TOTAL_PLAZAS = 70;
+
+  let selectedTicket = null;
+
+  async function loadPlazas() {
+    try {
+      const res = await fetch('https://api.notion.com/v1/databases/' + DATABASE_ID + '/query', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + NOTION_TOKEN,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ page_size: 100 })
+      });
+      const data = await res.json();
+      if (data.results) {
+        const disponibles = TOTAL_PLAZAS - data.results.length;
+        document.getElementById('plazasNum').textContent = disponibles > 0 ? disponibles : '0';
+        if (disponibles <= 0) {
+          document.getElementById('submitBtn').disabled = true;
+          document.getElementById('statusMsg').textContent = 'Lo sentimos, el aforo está completo.';
+        }
+      }
+    } catch(e) {}
+  }
+
+  function selectTicket(type) {
+    selectedTicket = type;
+    document.getElementById('ticketGeneral').classList.toggle('selected', type === 'General');
+    document.getElementById('ticketVIP').classList.toggle('selected', type === 'VIP');
+    document.getElementById('bizumBox').classList.toggle('visible', type === 'VIP');
+  }
+
+  function validate() {
+    let ok = true;
+    document.getElementById('errNombre').textContent = '';
+    document.getElementById('errEmail').textContent = '';
+    document.getElementById('errTelefono').textContent = '';
+    document.getElementById('statusMsg').textContent = '';
+
+    if (!selectedTicket) {
+      document.getElementById('statusMsg').textContent = 'Por favor selecciona un tipo de entrada.';
+      ok = false;
+    }
+    const nombre = document.getElementById('nombre').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const telefono = document.getElementById('telefono').value.trim();
+    if (!nombre) { document.getElementById('errNombre').textContent = 'Campo obligatorio'; ok = false; }
+    if (!email || !email.includes('@')) { document.getElementById('errEmail').textContent = 'Email no válido'; ok = false; }
+    if (!telefono) { document.getElementById('errTelefono').textContent = 'Campo obligatorio'; ok = false; }
+    return ok;
+  }
+
+  async function submitForm() {
+    if (!validate()) return;
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    const nombre = document.getElementById('nombre').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const telefono = document.getElementById('telefono').value.trim();
+    const estadoPago = selectedTicket === 'General' ? 'Confirmado' : 'Pendiente';
+
+    try {
+      const res = await fetch('https://api.notion.com/v1/pages', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + NOTION_TOKEN,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          parent: { database_id: DATABASE_ID },
+          properties: {
+            'Nombre y apellidos': { title: [{ text: { content: nombre } }] },
+            'Email': { email: email },
+            'Teléfono': { phone_number: telefono },
+            'Tipo de entrada': { select: { name: selectedTicket } },
+            'Estado pago': { select: { name: estadoPago } },
+            'Fecha de inscripción': { date: { start: new Date().toISOString().split('T')[0] } }
+          }
+        })
+      });
+
+      if (res.ok) {
+        document.getElementById('formMain').style.display = 'none';
+        document.getElementById('successScreen').classList.add('visible');
+        if (selectedTicket === 'VIP') {
+          document.getElementById('successVip').classList.add('visible');
+        }
+      } else {
+        document.getElementById('statusMsg').textContent = 'Error al enviar. Inténtalo de nuevo.';
+        btn.disabled = false;
+        btn.textContent = 'Reservar plaza';
+      }
+    } catch(e) {
+      document.getElementById('statusMsg').textContent = 'Error de conexión. Inténtalo de nuevo.';
+      btn.disabled = false;
+      btn.textContent = 'Reservar plaza';
+    }
+  }
+
+  loadPlazas();
+</script>
+</body>
+</html>
