@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -408,7 +409,7 @@
 
   async function loadPlazas() {
     try {
-      const res = await fetch('https://api.notion.com/v1/databases/' + DATABASE_ID + '/query', {
+      const res = await fetch('https://notion-proxy.lopezrosu.workers.dev/v1/databases/' + DATABASE_ID + '/query', {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + NOTION_TOKEN,
@@ -468,7 +469,7 @@
     const estadoPago = selectedTicket === 'General' ? 'Confirmado' : 'Pendiente';
 
     try {
-      const res = await fetch('https://api.notion.com/v1/pages', {
+      const res = await fetch('https://notion-proxy.lopezrosu.workers.dev/v1/pages', {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + NOTION_TOKEN,
